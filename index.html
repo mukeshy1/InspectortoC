@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C: Drive Inspection Report</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg2: #121a2b;
+      --panel: #172236;
+      --panel-2: #1d2d46;
+      --accent: #5cc8ff;
+      --accent-2: #7ef2c8;
+      --warning: #ffbf69;
+      --danger: #ff7f7f;
+      --text: #edf6ff;
+      --muted: #a9bfd8;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 10px 25px rgba(0,0,0,0.32);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg), var(--bg2));
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+      padding: 18px 22px;
+      background: rgba(23, 34, 54, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      letter-spacing: 0.04em;
+    }
+
+    .tag {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(92, 200, 255, 0.10);
+      color: var(--accent);
+      border: 1px solid rgba(92, 200, 255, 0.2);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .stat {
+      background: linear-gradient(180deg, rgba(29,45,70,0.98), rgba(21,31,48,0.98));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: clamp(1.5rem, 2vw, 2.2rem);
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(23, 34, 54, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 18px 22px 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 16px;
+      padding: 0 18px 18px;
+    }
+
+    .folder-card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(29, 45, 70, 0.9), rgba(18, 27, 42, 0.9));
+      border-radius: 18px;
+      padding: 16px 14px 12px;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .folder-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(92, 200, 255, 0.4);
+      box-shadow: 0 8px 24px rgba(92, 200, 255, 0.12);
+    }
+
+    .folder-card.active {
+      border-color: rgba(126, 242, 200, 0.7);
+      box-shadow: 0 0 0 1px rgba(126, 242, 200, 0.18), 0 12px 25px rgba(126, 242, 200, 0.12);
+    }
+
+    .folder-icon {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      font-size: 2rem;
+      background: linear-gradient(135deg, rgba(92,200,255,0.15), rgba(126,242,200,0.1));
+      margin-bottom: 10px;
+    }
+
+    .folder-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .folder-type {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+
+    .folder-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .details {
+      padding: 18px 20px 20px;
+    }
+
+    .detail-card {
+      background: linear-gradient(180deg, rgba(18, 27, 42, 0.9), rgba(20, 32, 48, 0.9));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .detail-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .detail-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(92, 200, 255, 0.12);
+      font-size: 1.5rem;
+    }
+
+    .detail-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .detail-path {
+      color: var(--muted);
+      font-size: 0.82rem;
+      word-break: break-all;
+      margin-bottom: 12px;
+    }
+
+    .detail-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .detail-list li {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      color: var(--text);
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 980px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .stats {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <h1>C: Drive Inspection</h1>
+      <div class="tag">System Summary</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Primary root</div>
+        <div class="stat-value">C:\</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Users</div>
+        <div class="stat-value">4</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Installed apps</div>
+        <div class="stat-value">~50+</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Profile</div>
+        <div class="stat-value">DragonNet2</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-header">Drive overview</div>
+        <div class="folder-grid" id="folderGrid"></div>
+      </div>
+
+      <aside class="panel">
+        <div class="panel-header">Details</div>
+        <div class="details" id="detailsBox"></div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const folders = [
+      {
+        id: 'root',
+        name: 'C:\\',
+        type: 'Drive root',
+        icon: '💾',
+        path: 'C:\\',
+        emoji: '💾',
+        summary: 'Main system partition with OS files, installed programs, user profiles, and system support folders.',
+        items: ['Windows', 'Program Files', 'ProgramData', 'Users', 'PerfLogs', 'Recovery']
+      },
+      {
+        id: 'users',
+        name: 'Users',
+        type: 'User profile directory',
+        icon: '👤',
+        path: 'C:\\Users',
+        summary: 'Contains all user-specific profiles and profile-level settings for the machine.',
+        items: ['Administrator', 'Default', 'DragonNet2', 'Public']
+      },
+      {
+        id: 'dragon',
+        name: 'DragonNet2',
+        type: 'Active user profile',
+        icon: '🧑‍💻',
+        path: 'C:\\Users\\DragonNet2',
+        summary: 'Current Windows user folder containing desktop files, app data, OneDrive, documents, downloads, and development settings.',
+        items: ['Desktop', 'Documents', 'Downloads', 'Pictures', 'AppData', 'OneDrive', '.vscode']
+      },
+      {
+        id: 'prog',
+        name: 'Program Files',
+        type: 'Application installation folder',
+        icon: '🧩',
+        path: 'C:\\Program Files',
+        summary: 'Primary directory for 64-bit system and application software installations.',
+        items: ['Microsoft', 'Google', 'Adobe', 'PowerToys', 'WindowsApps', 'VMware']
+      },
+      {
+        id: 'prog86',
+        name: 'Program Files (x86)',
+        type: '32-bit application folder',
+        icon: '🧰',
+        path: 'C:\\Program Files (x86)',
+        summary: 'Legacy 32-bit software install location kept for compatibility with older applications.',
+        items: ['Microsoft', 'Intel', 'Google', 'Realtek', 'VMware']
+      },
+      {
+        id: 'windows',
+        name: 'Windows',
+        type: 'Operating system files',
+        icon: '🪟',
+        path: 'C:\\Windows',
+        summary: 'Core Windows system files, drivers, resources, and platform services for the OS.',
+        items: ['System32', 'System', 'WinSxS', 'SoftwareDistribution', 'Temp']
+      }
+    ];
+
+    const grid = document.getElementById('folderGrid');
+    const details = document.getElementById('detailsBox');
+
+    function renderGrid() {
+      grid.innerHTML = folders.map((folder, index) => `
+        <button class="folder-card ${index === 0 ? 'active' : ''}" data-id="${folder.id}">
+          <div>
+            <div class="folder-icon">${folder.icon}</div>
+            <p class="folder-name">${folder.name}</p>
+            <div class="folder-type">${folder.type}</div>
+          </div>
+          <div class="folder-meta">
+            <span>Open</span>
+            <span>${folder.items.length} items</span>
+          </div>
+        </button>
+      `).join('');
+
+      document.querySelectorAll('.folder-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.folder-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          const selected = folders.find(f => f.id === card.dataset.id);
+          renderDetails(selected);
+        });
+      });
+    }
+
+    function renderDetails(folder) {
+      details.innerHTML = `
+        <div class="detail-card">
+          <div class="detail-title">
+            <div class="detail-icon">${folder.icon}</div>
+            <div class="detail-name">${folder.name}</div>
+          </div>
+          <div class="detail-path">${folder.path}</div>
+          <div class="note">${folder.summary}</div>
+        </div>
+        <div class="detail-card">
+          <div class="panel-header" style="padding:0 0 12px;">Included entries</div>
+          <ul class="detail-list">
+            ${folder.items.map(item => `<li>• ${item}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    renderGrid();
+    renderDetails(folders[0]);
+  </script>
+</body>
+</html>
